@@ -2,10 +2,16 @@
 
 Ray Tracer based on the [Ray Tracer in One Weekend booklet](http://www.realtimerendering.com/raytracing/Ray%20Tracing%20in%20a%20Weekend.pdf).
 
+### Example Result
+
+Yes, it's the same scene as the one from the booklet, recreated with this ray tracer
+
+![alt text](out.png)
+
 ### Differences from original
 - Multithreaded with `pthreads`
 - Using [HConLib](https://github.com/TheVaffel/HConLib) (`FlatAlg`) for linear algebra
-- Outputs in '.png' format using `libpng++`
+- Outputs in `.png` format using `libpng++`
 
 ### Usage
 
