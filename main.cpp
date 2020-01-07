@@ -1,5 +1,7 @@
 #include <iostream>
 #include <random>
+#include <atomic>
+
 #include <pthread.h>
 #include <png++/png.hpp>
 
@@ -13,11 +15,21 @@
 #include "material.hpp"
 #include "utils.hpp"
 
+// Simple experiment with WIDTH = 400, HEIGHT = 225, NUM_SAMPLES = 100 and DEPTH_LIM = 50 showed
+// 1 thread -> 56.882 s
+// 8 threads -> 16.157 s (speedup of 3.5)
+
+// With dynamic scheduling (threads take new rows until all rows are finished computing)
+// 8 threads -> 13.763 s (speedup of 4.13 from original)
+
 const int NUM_THREADS = 8;
-const int WIDTH = 1920;
-const int HEIGHT = 1080;
+const int WIDTH = 400;
+const int HEIGHT = 225;
 const int NUM_SAMPLES = 100;
 const int DEPTH_LIM = 50;
+
+const int MAX_CACHELINE_SIZE = 256;
+const int NUM_ELEMENTS_IN_PADDED_ROW = ((WIDTH * sizeof(int) * 3 + MAX_CACHELINE_SIZE - 1) / MAX_CACHELINE_SIZE) * MAX_CACHELINE_SIZE / sizeof(int);
 
 const char* IMAGE_NAME = "out.png";
 
@@ -78,7 +90,7 @@ Hitable* some_scene(unidist& dist) {
 }
 
 struct thread_info {
-  int top_row, bot_row;
+  std::atomic_int* g_rowcount;
   Hitable *world;
   int *out_array;
   Camera *cam;
@@ -90,16 +102,16 @@ void* draw_stuff(void* data) {
   
   thread_info info = *(thread_info*)data;
 
-  int *out_array = info.out_array;
-  int num_rows = info.top_row - info.bot_row + 1;
-  int curr = 0;
+  int curr = info.g_rowcount->fetch_add(1);
 
-  for (int i = info.top_row; i >= info.bot_row; i--) {
+  while(curr < HEIGHT) {
+    int *out_array = info.out_array + (NUM_ELEMENTS_IN_PADDED_ROW * curr);
+  
     for(int j = 0; j < WIDTH; j++) {
       vec3 col(0.0, 0.0, 0.0);
       for(int s = 0; s < NUM_SAMPLES; s++) {
 	float u = (float(j) + dist.get()) / float(WIDTH);
-	float v = (float(i) + dist.get()) / float(HEIGHT);
+	float v = (float(curr) + dist.get()) / float(HEIGHT);
 	Ray r = info.cam->getRay(u, v, dist);
 
 	col += color(r, info.world, 0, dist);
@@ -112,9 +124,12 @@ void* draw_stuff(void* data) {
       *(out_array++) = int(255.99 * col[1]);
       *(out_array++) = int(255.99 * col[2]);
     }
-    curr++;
-    std::cerr << "Processed " << curr << " out of " << num_rows << std::endl;
+  
+    std::cerr << "Processed row " << curr << " out of " << HEIGHT << std::endl;
+    
+    curr = info.g_rowcount->fetch_add(1);
   }
+  
   
   return NULL;
 }
@@ -133,26 +148,19 @@ int main() {
   
   Camera cam(lookfrom, lookat, vec3(0, 1, 0), 35, float(WIDTH) / float(HEIGHT), aperture, dist_to_focus);
 
-  int rows_per_thread = HEIGHT / NUM_THREADS;
-  int rest_rows = HEIGHT % NUM_THREADS;
 
   pthread_t threads[NUM_THREADS]; // First never initialized
   thread_info *infos[NUM_THREADS];
+  int *result_rows = new int[HEIGHT * NUM_ELEMENTS_IN_PADDED_ROW];
+  std::atomic_int global_counter(0);
   
   for(int i = 0; i < NUM_THREADS; i++) {
     infos[i] = new thread_info;
     infos[i]->world = world;
     infos[i]->cam = &cam;
-
-    int first = i * rows_per_thread + std::min(i, rest_rows);
-    int num_rows = rows_per_thread + (i >= rest_rows ? 0 : 1);
-    infos[i]->top_row = HEIGHT - 1 - first;
-    infos[i]->bot_row = infos[i]->top_row - num_rows + 1;
-
-    infos[i]->out_array = new int[3 * num_rows * WIDTH];
     
-    std::cerr << "Top row: " << infos[i]->top_row << ", bottom row: " << infos[i]->bot_row
-	      << ", num rows: " << num_rows << ", index: " << i <<  "\n";
+    infos[i]->out_array = result_rows;
+    infos[i]->g_rowcount = &global_counter;
   }
 
   for(int i = 1; i < NUM_THREADS; i++) {
@@ -169,23 +177,24 @@ int main() {
   }
 
   png::image<png::rgb_pixel> out_image(WIDTH, HEIGHT);
+
+  for(int i = 0; i < HEIGHT; i++) {
+    for(int j = 0; j < WIDTH; j++) {
+      int y = HEIGHT - i - 1;
+      out_image[i][j] =
+	png::rgb_pixel(result_rows[NUM_ELEMENTS_IN_PADDED_ROW * y + 3 * j + 0],
+		       result_rows[NUM_ELEMENTS_IN_PADDED_ROW * y + 3 * j + 1],
+		       result_rows[NUM_ELEMENTS_IN_PADDED_ROW * y + 3 * j + 2]);
+    }
+  }
   
   for(int i = 0; i < NUM_THREADS; i++) {
-    int curr = 0;
-    for(int j = infos[i]->top_row; j >= infos[i]->bot_row; j--) {
-      for(int k = 0; k < WIDTH; k++) {
-	out_image[HEIGHT - j - 1][k] = png::rgb_pixel(infos[i]->out_array[curr + 0],
-					 infos[i]->out_array[curr + 1],
-					 infos[i]->out_array[curr + 2]);
-	curr += 3;
-      }
-    }
-
-    out_image.write(IMAGE_NAME);
-
-    delete[] infos[i]->out_array;
     delete infos[i];
   }
+
+  out_image.write(IMAGE_NAME);
+  
+  delete[] result_rows;
 
   return 0;
 }
