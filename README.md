@@ -21,6 +21,7 @@ Yes, it's the same scene as the one from the booklet, recreated with this ray tr
 
 Measurements were done using an i7 with 8 cores (including hyperthreading) on a five year-old laptop on battery.
 It produced an image similar to the example above with dimensions 400 x 225, 100 samples per pixel and a depth limit of 50.
+As can be seen in the picture, some rows (like the one in the middle) have way more complex light interactions than others (like the one on top of the image). This is probably the largest reason that dynamically fetching new rows balances the work better than just pre-assigning a chunk to each thread, since some chunks are bound to be more expensive than others.
 
 ### Usage
 
