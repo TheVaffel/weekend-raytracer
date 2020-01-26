@@ -23,10 +23,10 @@
 // 8 threads -> 13.763 s (speedup of 4.13 from original)
 
 const int NUM_THREADS = 8;
-const int WIDTH = 400;
-const int HEIGHT = 225;
+// const int WIDTH = 400, HEIGHT = 225;
+const int WIDTH = 1920, HEIGHT = 1080;
 const int NUM_SAMPLES = 100;
-const int DEPTH_LIM = 50;
+const int DEPTH_LIM = 10;
 
 const int MAX_CACHELINE_SIZE = 256;
 const int NUM_ELEMENTS_IN_PADDED_ROW = ((WIDTH * sizeof(int) * 3 + MAX_CACHELINE_SIZE - 1) / MAX_CACHELINE_SIZE) * MAX_CACHELINE_SIZE / sizeof(int);
@@ -66,9 +66,10 @@ Hitable* some_scene(unidist& dist) {
       vec3 center(a + 0.7 * dist.get(), 0.2, b + 0.7 * dist.get());
       if ((center - vec3(4, 0.2, 0)).norm() > 0.9) {
 	if (choose_mat < 0.8) { // diffuse
-	  list[i++] = new Sphere(center, 0.2, new Lambertian(vec3(dist.get() * dist.get(),
-								  dist.get() * dist.get(),
-								  dist.get() * dist.get())));
+	  list[i++] = new MovingSphere(center, center + vec3(0.0f, 0.5 * dist.get(), 0), 0.0, 1.0,
+				       0.2, new Lambertian(vec3(dist.get() * dist.get(),
+									dist.get() * dist.get(),
+									dist.get() * dist.get())));
 	} else if (choose_mat < 0.95) { // metal
 	  list[i++] = new Sphere(center, 0.2,
 				 new Metal(vec3(0.5 * (1 + dist.get()),
@@ -146,7 +147,9 @@ int main() {
   float dist_to_focus = (lookfrom-lookat).norm();
   float aperture = 0.05;
   
-  Camera cam(lookfrom, lookat, vec3(0, 1, 0), 35, float(WIDTH) / float(HEIGHT), aperture, dist_to_focus);
+  Camera cam(lookfrom, lookat, vec3(0, 1, 0), 35, float(WIDTH) / float(HEIGHT),
+	     aperture, dist_to_focus,
+	     0.0f, 1.0f);
 
 
   pthread_t threads[NUM_THREADS]; // First never initialized

@@ -13,6 +13,10 @@ Yes, it's the same scene as the one from the booklet, recreated with this ray tr
 - Using [HConLib](https://github.com/TheVaffel/HConLib) (`FlatAlg`) for linear algebra
 - Outputs in `.png` format using `libpng++`
 
+#### Features from [Ray Tracing the Next Week](http://www.realtimerendering.com/raytracing/Ray%20Tracing_%20The%20Next%20Week.pdf)
+
+- Motion blur
+
 ### Some Optimization Measurements
 
 - Original serial program: 56.882 s
