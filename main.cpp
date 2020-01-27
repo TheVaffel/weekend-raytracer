@@ -22,11 +22,14 @@
 // With dynamic scheduling (threads take new rows until all rows are finished computing)
 // 8 threads -> 13.763 s (speedup of 4.13 from original)
 
+// Same as above, again, but using Bounding Volume Hierarchy (BVH): 2.601 s (33.128 s without, maybe due to motion blur
+
+
 const int NUM_THREADS = 8;
-// const int WIDTH = 400, HEIGHT = 225;
-const int WIDTH = 1920, HEIGHT = 1080;
+const int WIDTH = 400, HEIGHT = 225;
+// const int WIDTH = 1920, HEIGHT = 1080;
 const int NUM_SAMPLES = 100;
-const int DEPTH_LIM = 10;
+const int DEPTH_LIM = 50;
 
 const int MAX_CACHELINE_SIZE = 256;
 const int NUM_ELEMENTS_IN_PADDED_ROW = ((WIDTH * sizeof(int) * 3 + MAX_CACHELINE_SIZE - 1) / MAX_CACHELINE_SIZE) * MAX_CACHELINE_SIZE / sizeof(int);
@@ -66,7 +69,7 @@ Hitable* some_scene(unidist& dist) {
       vec3 center(a + 0.7 * dist.get(), 0.2, b + 0.7 * dist.get());
       if ((center - vec3(4, 0.2, 0)).norm() > 0.9) {
 	if (choose_mat < 0.8) { // diffuse
-	  list[i++] = new MovingSphere(center, center + vec3(0.0f, 0.5 * dist.get(), 0), 0.0, 1.0,
+	  list[i++] = new MovingSphere(center, center + vec3(0.0f, 0.2 * dist.get(), 0), 0.0, 1.0,
 				       0.2, new Lambertian(vec3(dist.get() * dist.get(),
 									dist.get() * dist.get(),
 									dist.get() * dist.get())));
@@ -86,8 +89,10 @@ Hitable* some_scene(unidist& dist) {
   list[i++] = new Sphere(vec3(0, 1, 0), 1.0, new Dielectric(1.5));
   list[i++] = new Sphere(vec3(-4, 1, 0), 1.0, new Lambertian(vec3(0.4, 0.2, 0.1)));
   list[i++] = new Sphere(vec3(4, 1, 0), 1.0, new Metal(vec3(0.7, 0.6, 0.5), 0.0));
-  
-  return new HitableList(list, i);
+
+
+  return new BVHNode(list, i, 0.0, 1.0, dist);
+  // return new HitableList(list, i);
 }
 
 struct thread_info {

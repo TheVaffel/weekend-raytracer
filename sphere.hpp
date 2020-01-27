@@ -3,16 +3,23 @@
 
 #include "hitable.hpp"
 #include "material.hpp"
+#include "aabb.hpp"
 
 class Sphere : public Hitable {
 public:
   Sphere() {}
   Sphere(const vec3& cen, float r, Material* mat) : center(cen), radius(r), mat_ptr(mat) {}
   virtual bool hit(const Ray& r, float tmin, float tmax, hit_record& rec) const;
+  virtual bool bounding_box(float t0, float t1, Aabb& box) const;
   vec3 center;
   float radius;
   Material *mat_ptr;
 };
+
+bool Sphere::bounding_box(float t0, float t1, Aabb& box) const {
+  box = Aabb(center - vec3(radius, radius, radius), center + vec3(radius, radius, radius));
+  return true;
+}
 
 bool Sphere::hit(const Ray& r, float tmin, float tmax, hit_record& rec) const {
   vec3 oc = r.origin() - center;
@@ -49,6 +56,7 @@ public:
     center0(cen0), center1(cen1), time0(t0), time1(t1), radius(r), mat_ptr(mat) { }
 
   virtual bool hit(const Ray& r, float tmin, float tmax, hit_record& rec) const;
+  virtual bool bounding_box(float t0, float t1, Aabb& box) const;
   Vector3 center(float time) const;
   Vector3 center0, center1;
   float time0, time1;
@@ -87,6 +95,16 @@ bool MovingSphere::hit(const Ray& r, float tmin, float tmax, hit_record& rec) co
     }
   }
   return false;
+}
+
+bool MovingSphere::bounding_box(float t0, float t1, Aabb& box) const {
+  Aabb box0 = Aabb(this->center(t0) - vec3(radius, radius, radius),
+		   center(t0) + vec3(radius, radius, radius));
+  Aabb box1 = Aabb(this->center(t1) - vec3(radius, radius, radius),
+		   center(t1) + vec3(radius, radius, radius));
+
+  box = surrounding_box(box0, box1);
+  return true;
 }
 
 #endif // ndef INCLUDE_SPHERE_HPP

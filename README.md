@@ -16,12 +16,15 @@ Yes, it's the same scene as the one from the booklet, recreated with this ray tr
 #### Features from [Ray Tracing the Next Week](http://www.realtimerendering.com/raytracing/Ray%20Tracing_%20The%20Next%20Week.pdf)
 
 - Motion blur
+- Bounding Volume Hierarchy (BVH)
 
 ### Some Optimization Measurements
 
 - Original serial program: 56.882 s
 - Parallelized with 8 threads, each thread is pre-allocated a chunk of contiguous rows: 16.157 s (speedup of 3.5)
 - Parallelized with 8 threads, each thread continues to fetch new rows to compute until all rows are taken: 13.763 s (speedup of 4.13 from original)
+- After motion blur was implemented, I measure 33.128 s on same laptop and same configuration as above. (Might also be because laptop is unplugged and low on power).
+- In the exact same setting as the above measurement, the implementation with BVH measures 2.652 s, a speedup of 12.49 (!)
 
 Measurements were done using an i7 with 8 cores (including hyperthreading) on a five year-old laptop on battery.
 It produced an image similar to the example above with dimensions 400 x 225, 100 samples per pixel and a depth limit of 50.
