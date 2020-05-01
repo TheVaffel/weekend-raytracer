@@ -15,7 +15,7 @@ struct unidist {
   
 };
 
-Vector3 random_in_unit_sphere(unidist& dist) {
+vec3 random_in_unit_sphere(unidist& dist) {
   vec3 p;
   do {
     p = 2.0 * vec3(dist.get(), dist.get(), dist.get()) - vec3(1, 1, 1);

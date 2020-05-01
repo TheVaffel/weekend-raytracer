@@ -3,19 +3,19 @@
 
 #include <FlatAlg.hpp>
 
-typedef Vector3 vec3;
+typedef falg::Vec3 vec3;
 
 class Ray {
 public:
   Ray() {}
-  Ray(const Vector3& orig, const Vector3& dir, float time) : orig(orig), dir(dir), _time(time) {}
-  Vector3 origin() const { return orig; }
-  Vector3 direction() const { return dir; }
+  Ray(const vec3& orig, const vec3& dir, float time) : orig(orig), dir(dir), _time(time) {}
+  vec3 origin() const { return orig; }
+  vec3 direction() const { return dir; }
   float time() const { return _time; }
-  Vector3 point_at_parameter(float t) const {return orig + t * dir; }
+  vec3 point_at_parameter(float t) const {return orig + t * dir; }
 
-  Vector3 orig;
-  Vector3 dir;
+  vec3 orig;
+  vec3 dir;
   float _time;
 };
 

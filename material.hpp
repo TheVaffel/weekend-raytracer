@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "ray.hpp"
+#include "texture.hpp"
 #include "utils.hpp"
 
 class Material {
@@ -14,15 +15,15 @@ public:
 
 class Lambertian : public Material {
 public:
-  Lambertian(const vec3& a) : albedo(a) {}
+  Lambertian(Texture* a) : albedo(a) {}
   virtual bool scatter(const Ray& r_in, const hit_record& rec, vec3& attenuation, Ray& scattered, unidist& dist) const {
     vec3 target = rec.p + rec.normal + random_in_unit_sphere(dist);
     scattered = Ray(rec.p, target - rec.p, r_in.time());
-    attenuation = albedo;
+    attenuation = albedo->value(0, 0, rec.p);;
     return true;
   }
 
-  vec3 albedo;
+  Texture* albedo;
 };
 
 vec3 reflect(const vec3& v, const vec3& n) {

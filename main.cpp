@@ -13,6 +13,7 @@
 #include "hitablelist.hpp"
 #include "camera.hpp"
 #include "material.hpp"
+#include "perlin.hpp"
 #include "utils.hpp"
 
 // Simple experiment with WIDTH = 400, HEIGHT = 225, NUM_SAMPLES = 100 and DEPTH_LIM = 50 showed
@@ -26,10 +27,10 @@
 
 
 const int NUM_THREADS = 8;
-const int WIDTH = 400, HEIGHT = 225;
+const int WIDTH = 480, HEIGHT = 360;
 // const int WIDTH = 1920, HEIGHT = 1080;
-const int NUM_SAMPLES = 100;
-const int DEPTH_LIM = 50;
+const int NUM_SAMPLES = 512;
+const int DEPTH_LIM = 10;
 
 const int MAX_CACHELINE_SIZE = 256;
 const int NUM_ELEMENTS_IN_PADDED_ROW = ((WIDTH * sizeof(int) * 3 + MAX_CACHELINE_SIZE - 1) / MAX_CACHELINE_SIZE) * MAX_CACHELINE_SIZE / sizeof(int);
@@ -40,7 +41,7 @@ vec3 elementwise_mult(const vec3& v1, const vec3& v2) {
   return vec3(v1[0] * v2[0], v1[1] * v2[1], v1[2] * v2[2]);
 }
 
-Vector3 color(const Ray& r, Hitable *world, int depth, unidist& dist) {
+falg::Vec3 color(const Ray& r, Hitable *world, int depth, unidist& dist) {
   hit_record rec;
   if (world->hit(r, 0.001, MAXFLOAT, rec)) {
     Ray scattered;
@@ -58,10 +59,34 @@ Vector3 color(const Ray& r, Hitable *world, int depth, unidist& dist) {
   }
 }
 
+Hitable* perlin_spheres(unidist& dist) {
+  Texture *pertext = new NoiseTexture(dist, 5.0f);
+  Hitable **list = new Hitable*[2];
+  list[0] = new Sphere(vec3(0, -1000, 0), 1000, new Lambertian(pertext));
+  list[1] = new Sphere(vec3(0, 2, 0), 2, new Lambertian(pertext));
+  return new HitableList(list, 2);
+}
+
+Hitable* two_spheres(unidist& dist) {
+  Texture *checker = new CheckerTexture(new ConstantTexture(vec3(0.2f, 0.3f, 0.1f)),
+					new ConstantTexture(vec3(0.9f, 0.9f, 0.9f)));
+  int n = 2;
+  Hitable **list = new Hitable*[n + 1];
+  list[0] = new Sphere(vec3(0, -10, 0), 10, new Lambertian(checker));
+  list[1] = new Sphere(vec3(0, 10, 0), 10, new Lambertian(checker));
+
+  return new HitableList(list, 2);
+  
+}
+
 Hitable* some_scene(unidist& dist) {
   int n = 500;
   Hitable **list = new Hitable*[n + 1];
-  list[0] = new Sphere(vec3(0, -1000, 0), 1000, new Lambertian(vec3(0.5, 0.5, 0.5)));
+
+  Texture* checks = new CheckerTexture(new ConstantTexture(vec3(0.2f, 0.3f, 0.1f)),
+				       new ConstantTexture(vec3(0.9f, 0.9f, 0.9f)));
+  
+  list[0] = new Sphere(vec3(0, -1000, 0), 1000, new Lambertian(checks));
   int i = 1;
   for (int a = -11; a < 11; a++) {
     for (int b = -11; b < 11; b++) {
@@ -70,9 +95,9 @@ Hitable* some_scene(unidist& dist) {
       if ((center - vec3(4, 0.2, 0)).norm() > 0.9) {
 	if (choose_mat < 0.8) { // diffuse
 	  list[i++] = new MovingSphere(center, center + vec3(0.0f, 0.2 * dist.get(), 0), 0.0, 1.0,
-				       0.2, new Lambertian(vec3(dist.get() * dist.get(),
-									dist.get() * dist.get(),
-									dist.get() * dist.get())));
+				       0.2, new Lambertian(new ConstantTexture(vec3(dist.get() * dist.get(),
+										    dist.get() * dist.get(),
+										    dist.get() * dist.get()))));
 	} else if (choose_mat < 0.95) { // metal
 	  list[i++] = new Sphere(center, 0.2,
 				 new Metal(vec3(0.5 * (1 + dist.get()),
@@ -87,7 +112,7 @@ Hitable* some_scene(unidist& dist) {
   }
 
   list[i++] = new Sphere(vec3(0, 1, 0), 1.0, new Dielectric(1.5));
-  list[i++] = new Sphere(vec3(-4, 1, 0), 1.0, new Lambertian(vec3(0.4, 0.2, 0.1)));
+  list[i++] = new Sphere(vec3(-4, 1, 0), 1.0, new Lambertian(new ConstantTexture(vec3(0.4, 0.2, 0.1))));
   list[i++] = new Sphere(vec3(4, 1, 0), 1.0, new Metal(vec3(0.7, 0.6, 0.5), 0.0));
 
 
@@ -126,9 +151,9 @@ void* draw_stuff(void* data) {
       col /= NUM_SAMPLES;
       col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
       
-      *(out_array++) = int(255.99 * col[0]);
-      *(out_array++) = int(255.99 * col[1]);
-      *(out_array++) = int(255.99 * col[2]);
+      *(out_array++) = std::max(0, std::min(255, int(255.99 * col[0])));
+      *(out_array++) = std::max(0, std::min(255, int(255.99 * col[1])));
+      *(out_array++) = std::max(0, std::min(255, int(255.99 * col[2])));
     }
   
     std::cerr << "Processed row " << curr << " out of " << HEIGHT << std::endl;
@@ -142,19 +167,27 @@ void* draw_stuff(void* data) {
 
 
 int main() {
-  std::cout << "P3\n" << WIDTH << " " << HEIGHT << "\n255\n";
-
   unidist dist;
-  Hitable *world = some_scene(dist);
+
+  // Hitable *world = some_scene(dist);
+  // Hitable *world = two_spheres(dist);
+  Hitable *world = perlin_spheres(dist);
 
   vec3 lookfrom(10, 1.5, 5);
   vec3 lookat(0, 1, 0);
   float dist_to_focus = (lookfrom-lookat).norm();
   float aperture = 0.05;
   
-  Camera cam(lookfrom, lookat, vec3(0, 1, 0), 35, float(WIDTH) / float(HEIGHT),
+  /* Camera cam(lookfrom, lookat, vec3(0, 1, 0), 35, float(WIDTH) / float(HEIGHT),
 	     aperture, dist_to_focus,
-	     0.0f, 1.0f);
+	     0.0f, 1.0f); */
+  Camera cam(vec3(13, 2, 3),
+	     vec3(0, 0, 0),
+	     vec3(0, 1, 0),
+	     20,
+	     float(WIDTH) / float(HEIGHT),
+	     0.0,
+	     10.0, 0.0f, 1.0f);
 
 
   pthread_t threads[NUM_THREADS]; // First never initialized
@@ -201,6 +234,8 @@ int main() {
   }
 
   out_image.write(IMAGE_NAME);
+
+  std::cout << "Wrote image to " << IMAGE_NAME << std::endl;
   
   delete[] result_rows;
 

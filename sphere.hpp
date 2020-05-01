@@ -52,20 +52,20 @@ bool Sphere::hit(const Ray& r, float tmin, float tmax, hit_record& rec) const {
 class MovingSphere: public Hitable {
 public:
   MovingSphere();
-  MovingSphere(Vector3 cen0, Vector3 cen1, float t0, float t1, float r, Material* mat) :
+  MovingSphere(const vec3& cen0, const vec3& cen1, float t0, float t1, float r, Material* mat) :
     center0(cen0), center1(cen1), time0(t0), time1(t1), radius(r), mat_ptr(mat) { }
 
   virtual bool hit(const Ray& r, float tmin, float tmax, hit_record& rec) const;
   virtual bool bounding_box(float t0, float t1, Aabb& box) const;
-  Vector3 center(float time) const;
-  Vector3 center0, center1;
+  vec3 center(float time) const;
+  vec3 center0, center1;
   float time0, time1;
   float radius;
   Material* mat_ptr;
   
 };
 
-Vector3 MovingSphere::center(float time) const {
+vec3 MovingSphere::center(float time) const {
   return this->center0 + (time - time0) / (time1 - time0) * (center1 - center0);
 }
 
