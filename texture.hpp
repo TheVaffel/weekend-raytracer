@@ -1,3 +1,6 @@
+#ifndef _TEXTURE_HPP
+#define _TEXTURE_HPP
+
 #include "ray.hpp"
 #include "perlin.hpp"
 
@@ -99,3 +102,5 @@ vec3 ImageTexture::value(float u, float v, const vec3& p) const {
 
   return vec3(r, g, b);
 }
+
+#endif // _TEXTURE_HPP

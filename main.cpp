@@ -16,6 +16,7 @@
 #include "material.hpp"
 #include "perlin.hpp"
 #include "transforms.hpp"
+#include "volume.hpp"
 #include "utils.hpp"
 
 // Simple experiment with WIDTH = 400, HEIGHT = 225, NUM_SAMPLES = 100 and DEPTH_LIM = 50 showed
@@ -32,7 +33,7 @@ const int NUM_THREADS = 8;
 // const int WIDTH = 480, HEIGHT = 360;
 const int WIDTH = 1920, HEIGHT = 1080;
 const int NUM_SAMPLES = 1024;
-const int DEPTH_LIM = 10;
+const int DEPTH_LIM = 50;
 
 const int MAX_CACHELINE_SIZE = 256;
 const int NUM_ELEMENTS_IN_PADDED_ROW = ((WIDTH * sizeof(int) * 3 + MAX_CACHELINE_SIZE - 1) / MAX_CACHELINE_SIZE) * MAX_CACHELINE_SIZE / sizeof(int);
@@ -60,7 +61,7 @@ falg::Vec3 color(const Ray& r, Hitable *world, int depth, unidist& dist) {
   }
 }
 
-Hitable* cornell_box() {
+Hitable* cornell_box(unidist& dist) {
   Hitable **list = new Hitable*[9];
   int i = 0;
   Material *red = new Lambertian(new ConstantTexture(vec3(0.65, 0.05, 0.05)));
@@ -75,18 +76,17 @@ Hitable* cornell_box() {
   list[i++] = new XZRect(0, 555, 0, 555, 0, white);
   list[i++] = new FlipNormals(new XYRect(0, 555, 0, 555, 555, white));
 
-  list[i++] = new Translate(
-			    new Rotate(
-				       new Box(vec3(0, 0, 0), vec3(165, 165, 165), white),
-				       vec3(0, -18, 0)),
-			    vec3(130, 0, 65)
-			    );
-  list[i++] = new Translate(
-			    new Rotate(
-				       new Box(vec3(0, 0, 0), vec3(165, 330, 165), white),
-				       vec3(0, 15, 0)),
-				       vec3(265, 0, 295)
-			    ); 
+  Hitable *b1 = new Translate(new Rotate(new Box(vec3(0, 0, 0),
+						 vec3(165, 165, 165), white),
+					 vec3(0, -18, 0)),
+			      vec3(130, 0, 65));
+  Hitable *b2 = new Translate(new Rotate(new Box(vec3(0, 0, 0),
+						 vec3(165, 330, 165), white),
+					 vec3(0, 15, 0)),
+			      vec3(265, 0, 295));
+
+  list[i++] = new ConstantMedium(b1, 0.01, new ConstantTexture(vec3(1.0, 1.0, 1.0)), dist);
+  list[i++] = new ConstantMedium(b2, 0.01, new ConstantTexture(vec3(0.0, 0.0, 0.0)), dist);
   
   return new HitableList(list, i);
 }
@@ -208,7 +208,7 @@ int main() {
   // Hitable *world = some_scene(dist);
   // Hitable *world = two_spheres(dist);
   // Hitable *world = perlin_spheres(dist);
-  Hitable *world = cornell_box();
+  Hitable *world = cornell_box(dist);
 
   vec3 lookfrom(10, 1.5, 5);
   vec3 lookat(0, 1, 0);
