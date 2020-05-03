@@ -3,17 +3,19 @@
 #include <atomic>
 
 #include <pthread.h>
-#include <png++/png.hpp>
+#include <OpenImageIO/imageio.h>
 
 #include <FlatAlg.hpp>
 
 #include "ray.hpp"
 #include "hitable.hpp"
 #include "sphere.hpp"
+#include "rect.hpp"
 #include "hitablelist.hpp"
 #include "camera.hpp"
 #include "material.hpp"
 #include "perlin.hpp"
+#include "transforms.hpp"
 #include "utils.hpp"
 
 // Simple experiment with WIDTH = 400, HEIGHT = 225, NUM_SAMPLES = 100 and DEPTH_LIM = 50 showed
@@ -27,9 +29,9 @@
 
 
 const int NUM_THREADS = 8;
-const int WIDTH = 480, HEIGHT = 360;
-// const int WIDTH = 1920, HEIGHT = 1080;
-const int NUM_SAMPLES = 512;
+// const int WIDTH = 480, HEIGHT = 360;
+const int WIDTH = 1920, HEIGHT = 1080;
+const int NUM_SAMPLES = 1024;
 const int DEPTH_LIM = 10;
 
 const int MAX_CACHELINE_SIZE = 256;
@@ -46,25 +48,59 @@ falg::Vec3 color(const Ray& r, Hitable *world, int depth, unidist& dist) {
   if (world->hit(r, 0.001, MAXFLOAT, rec)) {
     Ray scattered;
     vec3 attenuation;
+    vec3 emitted = rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
     if(depth < DEPTH_LIM && rec.mat_ptr->scatter(r, rec, attenuation, scattered, dist)) {
-      return elementwise_mult(attenuation, color(scattered, world, depth + 1, dist));
+      return emitted + elementwise_mult(attenuation, color(scattered, world, depth + 1, dist));
     } else {
-      return vec3(0, 0, 0);
+      return emitted;
     }
   }
   else {
-    vec3 unit_direction = r.direction().normalized();
-    float t = 0.5 * (unit_direction[1] + 1.0);
-    return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
+    return vec3(0, 0, 0);
   }
+}
+
+Hitable* cornell_box() {
+  Hitable **list = new Hitable*[9];
+  int i = 0;
+  Material *red = new Lambertian(new ConstantTexture(vec3(0.65, 0.05, 0.05)));
+  Material *white = new Lambertian(new ConstantTexture(vec3(0.73, 0.73, 0.73)));
+  Material *green = new Lambertian(new ConstantTexture(vec3(0.12, 0.45, 0.15)));
+  Material *light = new DiffuseLight(new ConstantTexture(vec3(15, 15, 15)));
+
+  list[i++] = new FlipNormals(new YZRect(0, 555, 0, 555, 555, green));
+  list[i++] = new YZRect(0, 555, 0, 555, 0, red);
+  list[i++] = new XZRect(213, 343, 227, 332, 554, light);
+  list[i++] = new FlipNormals(new XZRect(0, 555, 0, 555, 555, white));
+  list[i++] = new XZRect(0, 555, 0, 555, 0, white);
+  list[i++] = new FlipNormals(new XYRect(0, 555, 0, 555, 555, white));
+
+  list[i++] = new Translate(
+			    new Rotate(
+				       new Box(vec3(0, 0, 0), vec3(165, 165, 165), white),
+				       vec3(0, -18, 0)),
+			    vec3(130, 0, 65)
+			    );
+  list[i++] = new Translate(
+			    new Rotate(
+				       new Box(vec3(0, 0, 0), vec3(165, 330, 165), white),
+				       vec3(0, 15, 0)),
+				       vec3(265, 0, 295)
+			    ); 
+  
+  return new HitableList(list, i);
 }
 
 Hitable* perlin_spheres(unidist& dist) {
   Texture *pertext = new NoiseTexture(dist, 5.0f);
-  Hitable **list = new Hitable*[2];
+  Texture *earthtext = new ImageTexture("earth.jpeg");
+  Hitable **list = new Hitable*[4];
   list[0] = new Sphere(vec3(0, -1000, 0), 1000, new Lambertian(pertext));
-  list[1] = new Sphere(vec3(0, 2, 0), 2, new Lambertian(pertext));
-  return new HitableList(list, 2);
+  // list[1] = new Sphere(vec3(0, 2, 0), 2, new Lambertian(pertext));
+  list[1] = new Sphere(vec3(0, 2, 0), 2, new Lambertian(earthtext));
+  list[2] = new XYRect(3, 5, 1, 3, -2, new DiffuseLight(new ConstantTexture(vec3(4, 4, 4))));
+  list[3] = new Sphere(vec3(-8, 8, 8), 3, new DiffuseLight(new ConstantTexture(vec3(4, 4, 4))));
+  return new HitableList(list, 4);
 }
 
 Hitable* two_spheres(unidist& dist) {
@@ -123,7 +159,7 @@ Hitable* some_scene(unidist& dist) {
 struct thread_info {
   std::atomic_int* g_rowcount;
   Hitable *world;
-  int *out_array;
+  float *out_array;
   Camera *cam;
 };
 
@@ -136,7 +172,7 @@ void* draw_stuff(void* data) {
   int curr = info.g_rowcount->fetch_add(1);
 
   while(curr < HEIGHT) {
-    int *out_array = info.out_array + (NUM_ELEMENTS_IN_PADDED_ROW * curr);
+    float *out_array = info.out_array + (NUM_ELEMENTS_IN_PADDED_ROW * curr);
   
     for(int j = 0; j < WIDTH; j++) {
       vec3 col(0.0, 0.0, 0.0);
@@ -151,9 +187,9 @@ void* draw_stuff(void* data) {
       col /= NUM_SAMPLES;
       col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
       
-      *(out_array++) = std::max(0, std::min(255, int(255.99 * col[0])));
-      *(out_array++) = std::max(0, std::min(255, int(255.99 * col[1])));
-      *(out_array++) = std::max(0, std::min(255, int(255.99 * col[2])));
+      *(out_array++) = col[0]; // std::max(0, std::min(255, int(255.99 * col[0])));
+      *(out_array++) = col[1]; // std::max(0, std::min(255, int(255.99 * col[1])));
+      *(out_array++) = col[2]; // std::max(0, std::min(255, int(255.99 * col[2])));
     }
   
     std::cerr << "Processed row " << curr << " out of " << HEIGHT << std::endl;
@@ -171,7 +207,8 @@ int main() {
 
   // Hitable *world = some_scene(dist);
   // Hitable *world = two_spheres(dist);
-  Hitable *world = perlin_spheres(dist);
+  // Hitable *world = perlin_spheres(dist);
+  Hitable *world = cornell_box();
 
   vec3 lookfrom(10, 1.5, 5);
   vec3 lookat(0, 1, 0);
@@ -181,18 +218,21 @@ int main() {
   /* Camera cam(lookfrom, lookat, vec3(0, 1, 0), 35, float(WIDTH) / float(HEIGHT),
 	     aperture, dist_to_focus,
 	     0.0f, 1.0f); */
-  Camera cam(vec3(13, 2, 3),
-	     vec3(0, 0, 0),
+  /* Camera cam(vec3(13, 2, 3),
+	     vec3(0, 2, 0),
 	     vec3(0, 1, 0),
-	     20,
+	     40,
 	     float(WIDTH) / float(HEIGHT),
 	     0.0,
-	     10.0, 0.0f, 1.0f);
+	     10.0, 0.0f, 1.0f); */
+  Camera cam(vec3(278, 278, -800), vec3(278, 278, 0),
+	     vec3(0, 1, 0), 40.0, float(WIDTH) / float(HEIGHT),
+	     0.0, 10.0, 0.0, 1.0);
 
 
   pthread_t threads[NUM_THREADS]; // First never initialized
   thread_info *infos[NUM_THREADS];
-  int *result_rows = new int[HEIGHT * NUM_ELEMENTS_IN_PADDED_ROW];
+  float *result_rows = new float[HEIGHT * NUM_ELEMENTS_IN_PADDED_ROW];
   std::atomic_int global_counter(0);
   
   for(int i = 0; i < NUM_THREADS; i++) {
@@ -217,7 +257,22 @@ int main() {
     pthread_join(threads[i], NULL);
   }
 
-  png::image<png::rgb_pixel> out_image(WIDTH, HEIGHT);
+  OpenImageIO::ImageOutput *outfile = OpenImageIO::ImageOutput::create(IMAGE_NAME);
+  if(!outfile) {
+    std::cerr << "Cannot open output file, exiting" << std::endl;
+    exit(-1);
+  }
+
+  OpenImageIO::ImageSpec spec(WIDTH, HEIGHT, 3, OpenImageIO::TypeDesc::FLOAT);
+  outfile->open(IMAGE_NAME, spec);
+  
+  // We want to turn image upside down:
+  outfile->write_image(OpenImageIO::TypeDesc::FLOAT, result_rows + NUM_ELEMENTS_IN_PADDED_ROW * (HEIGHT - 1),
+		       OpenImageIO::AutoStride,
+		       - NUM_ELEMENTS_IN_PADDED_ROW * sizeof(float));
+  outfile->close();
+
+  /* png::image<png::rgb_pixel> out_image(WIDTH, HEIGHT);
 
   for(int i = 0; i < HEIGHT; i++) {
     for(int j = 0; j < WIDTH; j++) {
@@ -227,13 +282,13 @@ int main() {
 		       result_rows[NUM_ELEMENTS_IN_PADDED_ROW * y + 3 * j + 1],
 		       result_rows[NUM_ELEMENTS_IN_PADDED_ROW * y + 3 * j + 2]);
     }
-  }
+    } */
   
   for(int i = 0; i < NUM_THREADS; i++) {
     delete infos[i];
   }
 
-  out_image.write(IMAGE_NAME);
+  // out_image.write(IMAGE_NAME);
 
   std::cout << "Wrote image to " << IMAGE_NAME << std::endl;
   

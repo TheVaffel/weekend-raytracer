@@ -10,6 +10,9 @@
 class Material {
 public:
   virtual bool scatter(const Ray& r_in, const hit_record& rec, vec3& attenuation, Ray& scattered, unidist& dist) const = 0;
+  virtual vec3 emitted(float u, float v, const vec3& p) const {
+    return vec3(0, 0, 0);
+  }
 };
 
 
@@ -19,7 +22,7 @@ public:
   virtual bool scatter(const Ray& r_in, const hit_record& rec, vec3& attenuation, Ray& scattered, unidist& dist) const {
     vec3 target = rec.p + rec.normal + random_in_unit_sphere(dist);
     scattered = Ray(rec.p, target - rec.p, r_in.time());
-    attenuation = albedo->value(0, 0, rec.p);;
+    attenuation = albedo->value(rec.u, rec.v, rec.p);;
     return true;
   }
 
@@ -101,6 +104,19 @@ public:
   }
 
   float ref_idx;
+};
+
+class DiffuseLight : public Material {
+public:
+  DiffuseLight(Texture* tex) : emit(tex) { }
+  virtual bool scatter(const Ray& r_in, const hit_record& rec, vec3& attenuation, Ray& scattered, unidist& dist) const {
+    return false;
+  }
+  virtual vec3 emitted(float u, float v, const vec3& p) const {
+    return emit->value(u, v, p);
+  }
+
+  Texture* emit;
 };
 
 #endif // INCLUDE_MATERIAL_HPP
