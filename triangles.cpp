@@ -26,7 +26,7 @@ TriangleHitable::TriangleHitable(const std::string& file_name,
   }
 
   if(!err.empty()) {
-    std::cerr << err << std::endl;
+    std::cerr << "[tinyobj error] " << err << std::endl;
   }
 
   if (!ret) {
@@ -74,7 +74,6 @@ TriangleHitable::TriangleHitable(const std::string& file_name,
 }
 
 bool TriangleHitable::hit_triangle(const Ray& r, float tmin, float tmax, hit_record& rec, int ind) const {
-  // std::cout << "Calling hit_triangle" << std::endl;
   // The Moller-Trumbore algorithm
   
   using namespace falg;
@@ -93,13 +92,9 @@ bool TriangleHitable::hit_triangle(const Ray& r, float tmin, float tmax, hit_rec
 
   float det = p * e1;
   if(std::abs(det) <= 1e-7) {
-    // Ray and triangle nearly
-    // std::cout << "Triangle determinant = " << det << std::endl;
-    // std::cout << "p = " << p.str() << ", e1 = " << e1.str() << std::endl;
-    // std::cout << "v0 = " << v0.str() << ", v1 = " << v1.str() << ", v2 = " << v2.str() << std::endl;
+    // Ray and triangle nearly parallel
     return false;
   }
-  // std::cout << "Got past determinant check" << std::endl;
   
   Vec3 tuv = (1.0 / det) * Vec3(q * e2, p * tvec, q * dvec);
 
@@ -108,11 +103,6 @@ bool TriangleHitable::hit_triangle(const Ray& r, float tmin, float tmax, hit_rec
   float v = tuv[2];
   
   if(t <= tmin || t >= tmax || (u + v) > 1 || v < 0 || u < 0) {
-
-    /* if(u >= 0 && v >= 0 && u <= 1 && v <= 1) {
-      std::cout << "Should be inside triangle, t = " << t << std::endl;
-      } */
-    // std::cout << "Returning false" << std::endl;
     return false;
   }
 
@@ -122,7 +112,6 @@ bool TriangleHitable::hit_triangle(const Ray& r, float tmin, float tmax, hit_rec
   rec.mat_ptr = this->mat_ptr;
   rec.u = u;
   rec.v = v;
-  // std::cout << "Returned true!!" << std::endl;
   return true;
 }
 
@@ -150,7 +139,6 @@ bool TriangleHitable::bounding_box(float t0, float t1, Aabb& box) const {
   }
 
   box = Aabb(minv, maxv);
-  std::cout << "Min vec = " << minv.str() << ", "
-	    << "max vec = " << maxv.str() << std::endl;
+  
   return true;
 }
