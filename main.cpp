@@ -271,24 +271,11 @@ int main() {
 		       OpenImageIO::AutoStride,
 		       - NUM_ELEMENTS_IN_PADDED_ROW * sizeof(float));
   outfile->close();
-
-  /* png::image<png::rgb_pixel> out_image(WIDTH, HEIGHT);
-
-  for(int i = 0; i < HEIGHT; i++) {
-    for(int j = 0; j < WIDTH; j++) {
-      int y = HEIGHT - i - 1;
-      out_image[i][j] =
-	png::rgb_pixel(result_rows[NUM_ELEMENTS_IN_PADDED_ROW * y + 3 * j + 0],
-		       result_rows[NUM_ELEMENTS_IN_PADDED_ROW * y + 3 * j + 1],
-		       result_rows[NUM_ELEMENTS_IN_PADDED_ROW * y + 3 * j + 2]);
-    }
-    } */
   
   for(int i = 0; i < NUM_THREADS; i++) {
     delete infos[i];
   }
 
-  // out_image.write(IMAGE_NAME);
 
   std::cout << "Wrote image to " << IMAGE_NAME << std::endl;
   
