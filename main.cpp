@@ -17,6 +17,7 @@
 #include "perlin.hpp"
 #include "transforms.hpp"
 #include "volume.hpp"
+#include "triangles.hpp"
 #include "utils.hpp"
 
 // Simple experiment with WIDTH = 400, HEIGHT = 225, NUM_SAMPLES = 100 and DEPTH_LIM = 50 showed
@@ -26,19 +27,17 @@
 // With dynamic scheduling (threads take new rows until all rows are finished computing)
 // 8 threads -> 13.763 s (speedup of 4.13 from original)
 
-// Same as above, again, but using Bounding Volume Hierarchy (BVH): 2.601 s (33.128 s without, maybe due to motion blur
+// Same as above, again, but using Bounding Volume Hierarchy (BVH): 2.601 s (33.128 s without, maybe due to motion blur)
 
 
-const int NUM_THREADS = 8;
-// const int WIDTH = 480, HEIGHT = 360;
-const int WIDTH = 1920, HEIGHT = 1080;
-const int NUM_SAMPLES = 1024;
-const int DEPTH_LIM = 50;
+const int NUM_THREADS = 7;
+const int WIDTH = 480, HEIGHT = 360, NUM_SAMPLES = 10, DEPTH_LIM = 5;
+// const int WIDTH = 1920, HEIGHT = 1080, NUM_SAMPLES = 256, DEPTH_LIM = 10;
 
 const int MAX_CACHELINE_SIZE = 256;
 const int NUM_ELEMENTS_IN_PADDED_ROW = ((WIDTH * sizeof(int) * 3 + MAX_CACHELINE_SIZE - 1) / MAX_CACHELINE_SIZE) * MAX_CACHELINE_SIZE / sizeof(int);
 
-const char* IMAGE_NAME = "out.png";
+const char* IMAGE_NAME = "perlin.png";
 
 vec3 elementwise_mult(const vec3& v1, const vec3& v2) {
   return vec3(v1[0] * v2[0], v1[1] * v2[1], v1[2] * v2[2]);
@@ -57,8 +56,70 @@ falg::Vec3 color(const Ray& r, Hitable *world, int depth, unidist& dist) {
     }
   }
   else {
-    return vec3(0, 0, 0);
+    float t = 0.5f * (r.direction().y() + 1.0f);
+    return (1.0 - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5, 0.7, 1.0);
+    // return vec3(0.6, 0.6, 0.6);
   }
+}
+
+Hitable* teapot_scene(unidist& dist) {
+  int i = 0;
+  Hitable** list = new Hitable*[10];
+
+  
+  list[i++] = new TriangleHitable("teapot.obj", new Lambertian(new ConstantTexture(vec3(0.48, 0.83, 0.53))));
+  // list[i++] = new Sphere(vec3(0.0, 0.0, 0.0), 50.0, new Lambertian(new ConstantTexture(vec3(0.48, 0.83, 0.53))));
+  return new BVHNode(list, i, 0, 1, dist);
+}
+
+Hitable* finale(unidist& dist) {
+  int nb = 20;
+  Hitable **list = new Hitable*[30];
+  Hitable **boxlist = new Hitable*[10000];
+  Hitable **boxlist2 = new Hitable*[10000];
+  Material *white = new Lambertian(new ConstantTexture(vec3(0.73, 0.73, 0.73)));
+  Material *ground = new Lambertian(new ConstantTexture(vec3(0.48, 0.83, 0.53)));
+  int b = 0;
+  for(int i = 0; i < nb; i++) {
+    for(int j = 0; j < nb; j++) {
+      float w = 100;
+      float x0 = -1000 + i * w;
+      float z0 = -1000 + j * w;
+      float y0 = 0;
+      float x1 = x0 + w;
+      float y1 = 100 * (dist.get() + 0.01);
+      float z1 = z0 + w;
+      boxlist[b++] = new Box(vec3(x0, y0, z0), vec3(x1, y1, z1), ground);
+    }
+  }
+
+  int l = 0;
+  list[l++] = new BVHNode(boxlist, b, 0, 1, dist);
+  Material *light = new DiffuseLight(new ConstantTexture(vec3(7, 7, 7)));
+  list[l++] = new XZRect(123, 423, 147, 412, 554, light);
+  vec3 center(400, 400, 200);
+  list[l++] = new MovingSphere(center, center + vec3(30, 0, 0), 0, 1, 50, new Lambertian(new ConstantTexture(vec3(0.7, 0.3, 0.1))));
+  list[l++] = new Sphere(vec3(260, 150, 45), 50, new Dielectric(1.5));
+  list[l++] = new Sphere(vec3(0, 150, 145), 50, new Metal(vec3(0.8, 0.8, 0.9), 10.0));
+
+  Hitable *boundary = new Sphere(vec3(360, 150, 145), 70, new Dielectric(1.5));
+  list[l++] = boundary;
+  list[l++] = new ConstantMedium(boundary, 0.2, new ConstantTexture(vec3(1.0, 1.0, 1.0)), dist);
+
+  boundary = new Sphere(vec3(0, 0, 0), 5000, new Dielectric(1.5));
+  list[l++] = new ConstantMedium(boundary, 0.0001, new ConstantTexture(vec3(1.0, 1.0, 1.0)), dist);
+  
+  Material *emat = new Lambertian(new ImageTexture("earth.jpeg"));
+  list[l++] = new Sphere(vec3(400, 200, 400), 100, emat);
+  Texture *pertext = new NoiseTexture(dist, 0.1);
+  list[l++] = new Sphere(vec3(220, 280, 300), 80, new Lambertian(pertext));
+  int ns = 1000;
+  for (int j = 0; j < ns; j++) {
+    boxlist2[j] = new Sphere(vec3(165 * dist.get(), 165 * dist.get(), 165 * dist.get()), 10, white);
+  }
+  list[l++] = new Translate(new Rotate(new BVHNode(boxlist2, ns, 0.0, 1.0, dist), vec3(0, 15, 0)), vec3(-100, 270, 395));
+  // return new HitableList(list, l);
+  return new BVHNode(list, l, 0, 1, dist);
 }
 
 Hitable* cornell_box(unidist& dist) {
@@ -208,16 +269,18 @@ int main() {
   // Hitable *world = some_scene(dist);
   // Hitable *world = two_spheres(dist);
   // Hitable *world = perlin_spheres(dist);
-  Hitable *world = cornell_box(dist);
+  // Hitable *world = cornell_box(dist);
+  // Hitable *world = finale(dist);
+  Hitable *world = teapot_scene(dist);
 
-  vec3 lookfrom(10, 1.5, 5);
+  vec3 lookfrom(10, 1.5, 10);
   vec3 lookat(0, 1, 0);
   float dist_to_focus = (lookfrom-lookat).norm();
   float aperture = 0.05;
   
-  /* Camera cam(lookfrom, lookat, vec3(0, 1, 0), 35, float(WIDTH) / float(HEIGHT),
+  Camera cam(lookfrom * 20.0, lookat, vec3(0, 1, 0), 35, float(WIDTH) / float(HEIGHT),
 	     aperture, dist_to_focus,
-	     0.0f, 1.0f); */
+	     0.0f, 1.0f);
   /* Camera cam(vec3(13, 2, 3),
 	     vec3(0, 2, 0),
 	     vec3(0, 1, 0),
@@ -225,9 +288,9 @@ int main() {
 	     float(WIDTH) / float(HEIGHT),
 	     0.0,
 	     10.0, 0.0f, 1.0f); */
-  Camera cam(vec3(278, 278, -800), vec3(278, 278, 0),
-	     vec3(0, 1, 0), 40.0, float(WIDTH) / float(HEIGHT),
-	     0.0, 10.0, 0.0, 1.0);
+  /* Camera cam(vec3(500, 278, -800), vec3(278, 278, 0),
+	     vec3(0, 1, 0), 30.0, float(WIDTH) / float(HEIGHT),
+	     0.0, 10.0, 0.0, 1.0); */
 
 
   pthread_t threads[NUM_THREADS]; // First never initialized
