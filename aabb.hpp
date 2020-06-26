@@ -13,9 +13,6 @@ int box_x_compare(const void* a, const void* b) ;
 int box_y_compare(const void* a, const void* b) ;
 int box_z_compare(const void* a, const void* b) ;
 
-inline float ffmin(float a, float b) { return a < b ? a : b; }
-inline float ffmax(float a, float b) { return a > b ? a : b; }
-
 class Aabb {
 public:
   Aabb();
@@ -23,7 +20,9 @@ public:
 
   vec3 min() const;
   vec3 max() const;
-  inline bool hit(const Ray& r, float tmin, float tmax) const;
+  bool hit(const Ray& r, float tmin, float tmax) const;
+
+  void add(const vec3& v);
 
   vec3 _min;
   vec3 _max;

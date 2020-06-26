@@ -2,16 +2,16 @@
 
 
 Aabb surrounding_box(Aabb& box0, Aabb& box1) {
-  vec3 small(ffmin(box0.min()[0], box1.min()[0]),
-	     ffmin(box0.min()[1], box1.min()[1]),
-	     ffmin(box0.min()[2], box1.min()[2]));
-  vec3 big(ffmax(box0.max()[0], box1.max()[0]),
-	   ffmax(box0.max()[1], box1.max()[1]),
-	   ffmax(box0.max()[2], box1.max()[2]));
+  vec3 small(std::min(box0.min()[0], box1.min()[0]),
+	     std::min(box0.min()[1], box1.min()[1]),
+	     std::min(box0.min()[2], box1.min()[2]));
+  vec3 big(std::max(box0.max()[0], box1.max()[0]),
+	   std::max(box0.max()[1], box1.max()[1]),
+	   std::max(box0.max()[2], box1.max()[2]));
   return Aabb(small, big);
 }
 
-inline bool Aabb::hit(const Ray& r, float tmin, float tmax) const {
+bool Aabb::hit(const Ray& r, float tmin, float tmax) const {
   for (int a = 0; a < 3; a++) {
     float invD = 1.0f / r.direction()[a];
     float t0 = (min()[a] - r.origin()[a]) * invD;
@@ -27,8 +27,18 @@ inline bool Aabb::hit(const Ray& r, float tmin, float tmax) const {
   return true;
 }
 
+void Aabb::add(const vec3& v) {
+  for(int i = 0; i < 3; i++) {
+    _min[i] = std::min(v[i], _min[i]);
+    _max[i] = std::max(v[i], _max[i]);
+  }
+}
 
-Aabb::Aabb() {}
+// NB: Not really a valid state
+Aabb::Aabb() {
+  _min = vec3(1e18, 1e18, 1e18);
+  _max = vec3(-1e18, -1e8, -1e18);
+}
 Aabb::Aabb(const vec3& a, const vec3& b) { _min = a; _max = b; }
 
 vec3 Aabb::min() const { return _min; }

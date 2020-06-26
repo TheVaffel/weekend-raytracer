@@ -31,7 +31,7 @@
 
 
 const int NUM_THREADS = 7;
-const int WIDTH = 480, HEIGHT = 360, NUM_SAMPLES = 10, DEPTH_LIM = 5;
+const int WIDTH = 480, HEIGHT = 360, NUM_SAMPLES = 1, DEPTH_LIM = 5;
 // const int WIDTH = 1920, HEIGHT = 1080, NUM_SAMPLES = 256, DEPTH_LIM = 10;
 
 const int MAX_CACHELINE_SIZE = 256;
@@ -273,7 +273,7 @@ int main() {
   // Hitable *world = finale(dist);
   Hitable *world = teapot_scene(dist);
 
-  vec3 lookfrom(10, 1.5, 10);
+  vec3 lookfrom(10, 3, 10);
   vec3 lookat(0, 1, 0);
   float dist_to_focus = (lookfrom-lookat).norm();
   float aperture = 0.05;
