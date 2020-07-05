@@ -58,7 +58,6 @@ falg::Vec3 color(const Ray& r, Hitable *world, int depth, unidist& dist) {
   else {
     float t = 0.5f * (r.direction().y() + 1.0f);
     return (1.0 - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5, 0.7, 1.0);
-    // return vec3(0.6, 0.6, 0.6);
   }
 }
 
@@ -67,7 +66,10 @@ Hitable* teapot_scene(unidist& dist) {
   Hitable** list = new Hitable*[10];
 
   
-  list[i++] = new TriangleHitable("teapot.obj", new Lambertian(new ConstantTexture(vec3(0.48, 0.83, 0.53))));
+  list[i++] = new TriangleHitable("teapot.obj",
+				  // new Lambertian(new ConstantTexture(vec3(0.48, 0.83, 0.53)))
+				  new Dielectric(1.5f)
+				  );
   // list[i++] = new Sphere(vec3(0.0, 0.0, 0.0), 50.0, new Lambertian(new ConstantTexture(vec3(0.48, 0.83, 0.53))));
   return new BVHNode(list, i, 0, 1, dist);
 }
