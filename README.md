@@ -4,14 +4,21 @@ Ray Tracer based on the [Ray Tracer in One Weekend booklet](http://www.realtimer
 
 ### Example Result
 
-Yes, it's the same scene as the one from the booklet, recreated with this ray tracer
+Yes, it's the same scene as in the second booklet, recreated with this ray tracer
 
-![alt text](out.png)
+![many features](out.png)
+
+It shows some of its features, including textures, glass, metal, subsurface scattering, cubes, motion blur and volumetric rendering. The noise is pretty significant in this image, but would improve with increased number of samples per pixel.
+
+Another image, showing the Utah teapot in glass, imported as a `.obj` file
+
+![teapot](glass_teapot.png)
 
 ### Differences from original
 - Multithreaded with `pthreads`
 - Using [HConLib](https://github.com/TheVaffel/HConLib) (`FlatAlg`) for linear algebra
-- Outputs in `.png` format using `libpng++`
+- Outputs in `.png` format using `OpenImageIO`
+- Supports Wavefront `.obj` format
 
 #### Features from [Ray Tracing the Next Week](http://www.realtimerendering.com/raytracing/Ray%20Tracing_%20The%20Next%20Week.pdf)
 
