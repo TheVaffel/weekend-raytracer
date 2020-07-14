@@ -24,6 +24,8 @@ Another image, showing the Utah teapot in glass, imported as a `.obj` file
 
 - Motion blur
 - Bounding Volume Hierarchy (BVH)
+- Volumetric Rendering
+- Cubes
 
 ### Some Optimization Measurements
 
@@ -34,16 +36,15 @@ Another image, showing the Utah teapot in glass, imported as a `.obj` file
 - In the exact same setting as the above measurement, the implementation with BVH measures 2.652 s, a speedup of 12.49 (!)
 
 Measurements were done using an i7 with 8 cores (including hyperthreading) on a five year-old laptop on battery.
-It produced an image similar to the example above with dimensions 400 x 225, 100 samples per pixel and a depth limit of 50.
-As can be seen in the picture, some rows (like the one in the middle) have way more complex light interactions than others (like the one on top of the image). This is probably the largest reason that dynamically fetching new rows balances the work better than just pre-assigning a chunk to each thread, since some chunks are bound to be more expensive than others.
+It produced an image with dimensions 400 x 225, 100 samples per pixel and a depth limit of 50.
 
 ### Usage
 
-Run the compile script, and if everything is in order (you need `libpng++` and `pthread` development packages), you should be able to run 
+Run the compile script, and if everything is in order (you need `OpenImageIO` and `pthread` development packages), you should be able to run the program. The scene to render is determined entirely programatically within `main.cpp`.
 
 ### Potential issues / improvements
 
 - All configuration (image width, height and output image etc.) is done inside the `main.cpp` file, which means the program must be recompiled between each change.
-- Only spheres can be rendered at this point. I mean, if you look at atoms as tiny spheres of certain colors (which they really aren't) and assume perfect precision and infinite compute power (which I am gonna go ahead and assume that you don't have), this is enough. Otherwise, adding new components would be nice.
-- Support triangular formats (with fancy file I/O maybe?)
-- The code is inconsistent in which of the terms `vec3` (from the booklet) and `Vector3` (standard in `FlatAlg`) to use.
+[x] Only spheres can be rendered at this point. I mean, if you look at atoms as tiny spheres of certain colors (which they really aren't) and assume perfect precision and infinite compute power (which I am gonna go ahead and assume that you don't have), this is enough. Otherwise, adding new components would be nice.
+[x] Support triangular formats (with fancy file I/O maybe?)
+- The code is inconsistent in which of the terms `vec3` (from the booklet) and `Vec3` (standard in `FlatAlg`) to use.
