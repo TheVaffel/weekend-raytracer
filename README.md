@@ -48,3 +48,7 @@ Run the compile script, and if everything is in order (you need `OpenImageIO` an
 [x] Only spheres can be rendered at this point. I mean, if you look at atoms as tiny spheres of certain colors (which they really aren't) and assume perfect precision and infinite compute power (which I am gonna go ahead and assume that you don't have), this is enough. Otherwise, adding new components would be nice.
 [x] Support triangular formats (with fancy file I/O maybe?)
 - The code is inconsistent in which of the terms `vec3` (from the booklet) and `Vec3` (standard in `FlatAlg`) to use.
+
+Pic might be related
+
+![disco_teapot](disco_teapot.png)
