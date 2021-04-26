@@ -57,19 +57,46 @@ falg::Vec3 color(const Ray& r, Hitable *world, int depth, unidist& dist) {
   }
   else {
     float t = 0.5f * (r.direction().y() + 1.0f);
-    return (1.0 - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5, 0.7, 1.0);
+    // return (1.0 - t) * vec3(1.0f, 1.0f, 1.0f) + t * vec3(0.5, 0.7, 1.0);
+    return vec3(0.0f, 0.0f, 0.0f);
   }
 }
 
 Hitable* teapot_scene(unidist& dist) {
   int i = 0;
-  Hitable** list = new Hitable*[10];
+  Hitable** list = new Hitable*[200];
 
-  
+  const int numQuads = 20;
+
+
   list[i++] = new TriangleHitable("teapot.obj",
 				  // new Lambertian(new ConstantTexture(vec3(0.48, 0.83, 0.53)))
-				  new Dielectric(1.5f)
-				  );
+				  new Dielectric(1.5f));
+
+  list[i++] = new Box(vec3(-500.f, -500.0f, -500.f),
+                      vec3(500.f, -40.0f, 500.f),
+                      new Metal(0.5f * vec3(1.0f, 1.0f, 1.0f), 0.02f));
+
+  for (int j = 0; j < numQuads; j++) {
+      float rads = 2 * M_PI * j / (float) numQuads;
+      float ang = rads * 180 / M_PI;
+
+
+      float c0 = (1.0f + cos(rads * 5.0330f + 20)) / 2;
+      float c1 = (1.0f + cos(rads * 8.7223f + 10)) / 2;
+      float c2 = (1.0f + cos(rads * 10.0239f + 30)) / 2;
+
+      // vec3 color(0.0f, 0.8f, 0.0f);
+      vec3 color(c0, c1, c2);
+
+      Hitable *rect = new Rotate(new XYRect(-10.0f, 10.0f, -50.0f, 400.f, -400.0f,
+                                               new DiffuseLight(new ConstantTexture(color))),
+                                    vec3(0.0f, ang, 0.0f));
+
+      list[i++] = rect;
+  }
+
+
   // list[i++] = new Sphere(vec3(0.0, 0.0, 0.0), 50.0, new Lambertian(new ConstantTexture(vec3(0.48, 0.83, 0.53))));
   return new BVHNode(list, i, 0, 1, dist);
 }
