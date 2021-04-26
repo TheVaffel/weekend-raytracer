@@ -19,7 +19,7 @@ public:
   virtual bool bounding_box(float t0, float t1, Aabb& box) const {
     return ptr->bounding_box(t0, t1, box);
   }
-  
+
   Hitable *ptr;
 };
 
@@ -102,7 +102,7 @@ vec3 rotate_axes_inv(const vec3& point, const vec3& cosrot, const vec3& sinrot) 
   p = rot_ax(p, cosrot, isin, 2);
   p = rot_ax(p, cosrot, isin, 1);
   p = rot_ax(p, cosrot, isin, 0);
-  
+
   return p;
 }
 
@@ -121,7 +121,7 @@ Rotate::Rotate(Hitable* p, const vec3& angles) : ptr(p) {
 	float x = i * bbox.max().x() + (1 - i) * bbox.min().x();
 	float y = j * bbox.max().y() + (1 - j) * bbox.min().y();
 	float z = k * bbox.max().z() + (1 - k) * bbox.min().z();
-	
+
 	vec3 rot = rotate_axes(vec3(x, y, z), cos_rotation, sin_rotation);
 
 	for(int c = 0; c < 3; c++) {
@@ -144,7 +144,7 @@ bool Rotate::hit(const Ray& r, float t_min, float t_max, hit_record& rec) const 
 
   origin = rotate_axes_inv(origin, cos_rotation, sin_rotation);
   direction = rotate_axes_inv(direction, cos_rotation, sin_rotation);
-  
+
   Ray rotated(origin, direction, r.time());
 
 

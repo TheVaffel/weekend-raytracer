@@ -59,11 +59,11 @@ TriangleHitable::TriangleHitable(const std::string& file_name,
 	exit(1);
       }
 
-      
+
       this->vertices.resize(attrib.vertices.size());
       this->normals.resize(attrib.vertices.size());
       this->uvs.resize(attrib.vertices.size());
-	
+
       for(int i = 0; i < fv; i++) {
 	tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + i];
 
@@ -76,7 +76,7 @@ TriangleHitable::TriangleHitable(const std::string& file_name,
 	  falg::Vec3 normal(attrib.normals[3 * idx.vertex_index + 0],
 			  attrib.normals[3 * idx.vertex_index + 1],
 			  attrib.normals[3 * idx.vertex_index + 2]);
-	
+
 	  this->normals[idx.vertex_index] = normal;
 	}
 	if(attrib.texcoords.size()) {
@@ -84,7 +84,7 @@ TriangleHitable::TriangleHitable(const std::string& file_name,
 			attrib.texcoords[2 * idx.vertex_index + 1]);
 	  this->uvs[idx.vertex_index] = uv;
 	}
-	
+
 
 	indices.push_back(idx.vertex_index);
       }
@@ -96,16 +96,16 @@ TriangleHitable::TriangleHitable(const std::string& file_name,
   this->num_triangles = indices.size() / 3;
 
   std::cout << "Num triangles = " << this->num_triangles << std::endl;
-  
+
   std::vector<int> indices_range(this->num_triangles);
   for(int i = 0; i < this->num_triangles; i++) {
     indices_range[i] = i;
   }
 
-  
-  
+
+
   std::cout << "[TriangleHitable()] Inds: " << indices_range.size() << " elems, first = " << indices_range[0] << ", last: " << (*(indices_range.end() - 1)) << std::endl;
-  
+
   std::cout << "Constructing BVH tree for " << file_name << std::endl;
   this->bvh_root = this->construct_bvh_tree(indices_range);
   std::cout << "Finished constructing BVH" << std::endl;
@@ -148,14 +148,14 @@ void TriangleHitable::fill_triangle_min_coord(std::vector<std::pair<float, int> 
 
 TriangleBVH* TriangleHitable::construct_bvh_tree(const std::vector<int>& inds) {
 
-  
+
   std::cout << "[construct] Inds: " << inds.size() << " elems, first = " << inds[0] << ", last: " << (*(inds.end() - 1)) << std::endl;
-  
+
   TriangleBVH* bvh = new TriangleBVH;
 
   bvh->box = this->compute_aabb(inds);
   std::cout << "Computed bounding box bvh " << bvh->box.min().str() << ", " << bvh->box.max().str() << std::endl;
-  
+
   if(inds.size() <= 2) {
     bvh->inds = new int[inds.size()];
     bvh->num_inds = inds.size();
@@ -164,7 +164,7 @@ TriangleBVH* TriangleHitable::construct_bvh_tree(const std::vector<int>& inds) {
     memcpy(bvh->inds, inds.data(), bvh->num_inds * sizeof(int));
     return bvh;
   }
-  
+
   std::vector<std::pair<float, int> > x_scores(inds.size());
   std::vector<std::pair<float, int> > y_scores(inds.size());
   std::vector<std::pair<float, int> > z_scores(inds.size());
@@ -177,7 +177,7 @@ TriangleBVH* TriangleHitable::construct_bvh_tree(const std::vector<int>& inds) {
   std::sort(x_scores.begin(), x_scores.end());
   std::sort(y_scores.begin(), y_scores.end());
   std::sort(z_scores.begin(), z_scores.end());
-  
+
   Aabb bx0, bx1, by0, by1, bz0, bz1;
 
   // Compute axis-aligned bounding boxes dividing each sorted array in two
@@ -194,7 +194,7 @@ TriangleBVH* TriangleHitable::construct_bvh_tree(const std::vector<int>& inds) {
 
 
   std::vector<std::pair<float, int> >* vecref;
-  
+
   if(max_score == x_score) {
     vecref = &x_scores;
     std::cout << "Dividing by x-axis" << std::endl;
@@ -209,9 +209,9 @@ TriangleBVH* TriangleHitable::construct_bvh_tree(const std::vector<int>& inds) {
     exit(-1);
   }
 
-  
+
   unsigned int halfway = inds.size() / 2;
-  
+
   std::vector<int> vec0(halfway);
   std::vector<int> vec1(inds.size() - halfway);
 
@@ -273,7 +273,7 @@ float TriangleHitable::separation_score(const Aabb& b0, const Aabb& b1) {
 
 bool TriangleHitable::hit_triangle(const Ray& r, float tmin, float tmax, hit_record& rec, int ind) const {
   // The Moller-Trumbore algorithm
-  
+
   using namespace falg;
   Vec3 v0 = this->vertices[this->indices[3 * ind + 0]];
   Vec3 v1 = this->vertices[this->indices[3 * ind + 1]];
@@ -299,7 +299,7 @@ bool TriangleHitable::hit_triangle(const Ray& r, float tmin, float tmax, hit_rec
   float t = tuv[0];
   float u = tuv[1];
   float v = tuv[2];
-  
+
   if(t <= tmin || t >= tmax || (u + v) > 1 || v < 0 || u < 0) {
     return false;
   }
@@ -309,7 +309,7 @@ bool TriangleHitable::hit_triangle(const Ray& r, float tmin, float tmax, hit_rec
   rec.normal = (this->normals[this->indices[3 * ind + 0]] * (1 - u - v) +
     this->normals[this->indices[3 * ind + 1]] * u +
 		this->normals[this->indices[3 * ind + 2]] * v).normalized();
-  
+
   rec.mat_ptr = this->mat_ptr;
   rec.u = u;
   rec.v = v;
@@ -319,11 +319,11 @@ bool TriangleHitable::hit_triangle(const Ray& r, float tmin, float tmax, hit_rec
 bool TriangleHitable::hit_triangle_bvh(TriangleBVH* node, const Ray& r,
 				       float tmin, float tmax, hit_record& rec,
 				       int depth) const {
-  
+
   if (node->box.hit(r, tmin, tmax)) {
-    
+
     bool bb = false;
-    
+
     if(node->num_inds) {
       for(int i = 0; i < node->num_inds; i++) {
 	if(this->hit_triangle(r, tmin, tmax, rec, node->inds[i])) {
@@ -332,20 +332,20 @@ bool TriangleHitable::hit_triangle_bvh(TriangleBVH* node, const Ray& r,
 	}
       }
     }
-    
+
     if(node->l || node->r) {
       hit_record rl, rr;
 
       // Ensure rl.t is set
       rl.t = tmax;
-      
+
       bool hl = node->l ? hit_triangle_bvh(node->l, r, tmin, tmax, rl, depth + 1) : false;
 
       // Update tmax, so we may skip hr if we're lucky
       tmax = rl.t;
-    
+
       bool hr = node->r ? hit_triangle_bvh(node->r, r, tmin, tmax, rr, depth + 1) : false;
-      
+
       if(hl && hr) {
 	if(rl.t < rr.t) {
 	  rec = rl;
@@ -362,7 +362,7 @@ bool TriangleHitable::hit_triangle_bvh(TriangleBVH* node, const Ray& r,
       } else {
 	return bb;
       }
-    
+
     } else {
       return bb;
     }
@@ -394,6 +394,6 @@ bool TriangleHitable::bounding_box(float t0, float t1, Aabb& box) const {
   }
 
   box = this->compute_aabb(inds);
-  
+
   return true;
 }

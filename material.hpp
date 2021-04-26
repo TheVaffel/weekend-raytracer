@@ -128,7 +128,7 @@ public:
     attenuation = albedo->value(rec.u, rec.v, rec.p);
     return true;
   }
-  
+
   Texture *albedo;
 };
 

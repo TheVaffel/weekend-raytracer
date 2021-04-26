@@ -110,7 +110,7 @@ Hitable* finale(unidist& dist) {
 
   boundary = new Sphere(vec3(0, 0, 0), 5000, new Dielectric(1.5));
   list[l++] = new ConstantMedium(boundary, 0.0001, new ConstantTexture(vec3(1.0, 1.0, 1.0)), dist);
-  
+
   Material *emat = new Lambertian(new ImageTexture("earth.jpeg"));
   list[l++] = new Sphere(vec3(400, 200, 400), 100, emat);
   Texture *pertext = new NoiseTexture(dist, 0.1);
@@ -150,7 +150,7 @@ Hitable* cornell_box(unidist& dist) {
 
   list[i++] = new ConstantMedium(b1, 0.01, new ConstantTexture(vec3(1.0, 1.0, 1.0)), dist);
   list[i++] = new ConstantMedium(b2, 0.01, new ConstantTexture(vec3(0.0, 0.0, 0.0)), dist);
-  
+
   return new HitableList(list, i);
 }
 
@@ -175,7 +175,7 @@ Hitable* two_spheres(unidist& dist) {
   list[1] = new Sphere(vec3(0, 10, 0), 10, new Lambertian(checker));
 
   return new HitableList(list, 2);
-  
+
 }
 
 Hitable* some_scene(unidist& dist) {
@@ -184,7 +184,7 @@ Hitable* some_scene(unidist& dist) {
 
   Texture* checks = new CheckerTexture(new ConstantTexture(vec3(0.2f, 0.3f, 0.1f)),
 				       new ConstantTexture(vec3(0.9f, 0.9f, 0.9f)));
-  
+
   list[0] = new Sphere(vec3(0, -1000, 0), 1000, new Lambertian(checks));
   int i = 1;
   for (int a = -11; a < 11; a++) {
@@ -229,14 +229,14 @@ struct thread_info {
 void* draw_stuff(void* data) {
 
   unidist dist;
-  
+
   thread_info info = *(thread_info*)data;
 
   int curr = info.g_rowcount->fetch_add(1);
 
   while(curr < HEIGHT) {
     float *out_array = info.out_array + (NUM_ELEMENTS_IN_PADDED_ROW * curr);
-  
+
     for(int j = 0; j < WIDTH; j++) {
       vec3 col(0.0, 0.0, 0.0);
       for(int s = 0; s < NUM_SAMPLES; s++) {
@@ -246,21 +246,21 @@ void* draw_stuff(void* data) {
 
 	col += color(r, info.world, 0, dist);
       }
-      
+
       col /= NUM_SAMPLES;
       col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
-      
+
       *(out_array++) = col[0]; // std::max(0, std::min(255, int(255.99 * col[0])));
       *(out_array++) = col[1]; // std::max(0, std::min(255, int(255.99 * col[1])));
       *(out_array++) = col[2]; // std::max(0, std::min(255, int(255.99 * col[2])));
     }
-  
+
     std::cerr << "Processed row " << curr << " out of " << HEIGHT << std::endl;
-    
+
     curr = info.g_rowcount->fetch_add(1);
   }
-  
-  
+
+
   return NULL;
 }
 
@@ -279,7 +279,7 @@ int main() {
   vec3 lookat(0, 1, 0);
   float dist_to_focus = (lookfrom-lookat).norm();
   float aperture = 0.05;
-  
+
   Camera cam(lookfrom * 20.0, lookat, vec3(0, 1, 0), 35, float(WIDTH) / float(HEIGHT),
 	     aperture, dist_to_focus,
 	     0.0f, 1.0f);
@@ -299,12 +299,12 @@ int main() {
   thread_info *infos[NUM_THREADS];
   float *result_rows = new float[HEIGHT * NUM_ELEMENTS_IN_PADDED_ROW];
   std::atomic_int global_counter(0);
-  
+
   for(int i = 0; i < NUM_THREADS; i++) {
     infos[i] = new thread_info;
     infos[i]->world = world;
     infos[i]->cam = &cam;
-    
+
     infos[i]->out_array = result_rows;
     infos[i]->g_rowcount = &global_counter;
   }
@@ -330,20 +330,20 @@ int main() {
 
   OpenImageIO::ImageSpec spec(WIDTH, HEIGHT, 3, OpenImageIO::TypeDesc::FLOAT);
   outfile->open(IMAGE_NAME, spec);
-  
+
   // We want to turn image upside down:
   outfile->write_image(OpenImageIO::TypeDesc::FLOAT, result_rows + NUM_ELEMENTS_IN_PADDED_ROW * (HEIGHT - 1),
 		       OpenImageIO::AutoStride,
 		       - NUM_ELEMENTS_IN_PADDED_ROW * sizeof(float));
   outfile->close();
-  
+
   for(int i = 0; i < NUM_THREADS; i++) {
     delete infos[i];
   }
 
 
   std::cout << "Wrote image to " << IMAGE_NAME << std::endl;
-  
+
   delete[] result_rows;
 
   return 0;

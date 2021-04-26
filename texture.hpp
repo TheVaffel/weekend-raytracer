@@ -46,7 +46,7 @@ public:
       return even->value(u, v, p);
     }
   }
-  
+
   Texture *even, *odd;
 };
 

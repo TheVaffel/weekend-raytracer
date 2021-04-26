@@ -64,7 +64,7 @@ public:
   float time0, time1;
   float radius;
   Material* mat_ptr;
-  
+
 };
 
 vec3 MovingSphere::center(float time) const {

@@ -10,12 +10,12 @@ float perlin_interp(vec3 c[2][2][2], float u, float v, float w) {
   float uu = u * u * (3 - 2 * u);
   float vv = v * v * (3 - 2 * v);
   float ww = w * w * (3 - 2 * w);
-  
+
   for(int i = 0; i < 2; i++) {
     for(int j = 0; j < 2; j++) {
       for(int k = 0; k < 2; k++) {
 	vec3 weight_v (u - i, v - j, w - k);
-	
+
 	accum +=
 	  (i * uu + (1 - i) * (1 - uu)) *
 	  (j * vv + (1 - j) * (1 - vv)) *
@@ -66,9 +66,9 @@ public:
     perm_x = perlin_generate_perm(dist);
     perm_y = perlin_generate_perm(dist);
     perm_z = perlin_generate_perm(dist);
-  } 
+  }
 
-  
+
   float turb(const vec3& p, int depth=7) const {
     float accum = 0;
     vec3 temp_p = p;
@@ -80,7 +80,7 @@ public:
     }
     return std::abs(accum);
   }
-  
+
   float noise(const vec3& p) const {
     float u = p.x() - floor(p.x());
     float v = p.y() - floor(p.y());
@@ -99,7 +99,7 @@ public:
 	}
       }
     }
-    
+
     // return ranfloat[perm_x[i] ^ perm_y[j] ^ perm_z[k]];
     return perlin_interp(c, u, v, w);
   }
