@@ -67,7 +67,7 @@ public:
   ImageTexture() {}
   ImageTexture(float *pixels, int a, int b) : data(pixels), nx(a), ny(b), nchannels(3) {}
   ImageTexture(const std::string& image_file) {
-    OpenImageIO::ImageInput *imin = OpenImageIO::ImageInput::open(image_file);
+    std::unique_ptr<OpenImageIO::ImageInput> imin = OpenImageIO::ImageInput::open(image_file);
     if(!imin) {
       std::cerr << "Could not open image file " << image_file << ", exiting" << std::endl;
       exit(-1);

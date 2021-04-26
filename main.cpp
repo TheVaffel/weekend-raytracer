@@ -322,7 +322,7 @@ int main() {
     pthread_join(threads[i], NULL);
   }
 
-  OpenImageIO::ImageOutput *outfile = OpenImageIO::ImageOutput::create(IMAGE_NAME);
+  std::unique_ptr<OpenImageIO::ImageOutput> outfile = OpenImageIO::ImageOutput::create(IMAGE_NAME);
   if(!outfile) {
     std::cerr << "Cannot open output file, exiting" << std::endl;
     exit(-1);
