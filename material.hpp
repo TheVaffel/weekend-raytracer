@@ -40,7 +40,7 @@ public:
     vec3 reflected = reflect(r_in.direction().normalized(), rec.normal);
     scattered = Ray(rec.p, reflected + fuzz * random_in_unit_sphere(dist), r_in.time());
     attenuation = albedo;
-    return scattered.direction() * rec.normal > 0;
+    return falg::dot(scattered.direction(), rec.normal) > 0;
   }
   vec3 albedo;
   float fuzz;
@@ -49,7 +49,7 @@ public:
 bool refract(const vec3& v, const vec3& n, float ni_over_nt, vec3& refracted) {
   vec3 uv = v.normalized();
 
-  float dt = uv * n;
+  float dt = falg::dot(uv, n);
   float discriminant = 1.0 - ni_over_nt * ni_over_nt * (1 - dt * dt);
   if (discriminant > 0) {
     refracted = ni_over_nt * (uv - n * dt) - n * sqrt(discriminant);
@@ -77,15 +77,15 @@ public:
     vec3 refracted;
     float reflect_prob;
     float cosine;
-    
-    if (r_in.direction() * rec.normal > 0) {
+
+    if (falg::dot(r_in.direction(), rec.normal) > 0) {
       outward_normal = -rec.normal;
       ni_over_nt = ref_idx;
-      cosine = ref_idx * (r_in.direction() * rec.normal) / r_in.direction().norm();
+      cosine = ref_idx * (falg::dot(r_in.direction(), rec.normal)) / r_in.direction().norm();
     } else {
       outward_normal = rec.normal;
       ni_over_nt = 1.0 / ref_idx;
-      cosine = -r_in.direction() * rec.normal / r_in.direction().norm();
+      cosine = - falg::dot(r_in.direction(), rec.normal) / r_in.direction().norm();
     }
 
     if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted)) {

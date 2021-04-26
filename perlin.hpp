@@ -17,9 +17,9 @@ float perlin_interp(vec3 c[2][2][2], float u, float v, float w) {
 	vec3 weight_v (u - i, v - j, w - k);
 
 	accum +=
-	  (i * uu + (1 - i) * (1 - uu)) *
-	  (j * vv + (1 - j) * (1 - vv)) *
-	  (k * ww + (1 - k) * (1 - ww)) * (c[i][j][k] * weight_v);
+            (i * uu + (1 - i) * (1 - uu)) *
+            (j * vv + (1 - j) * (1 - vv)) *
+            (k * ww + (1 - k) * (1 - ww)) * falg::dot(c[i][j][k], weight_v);
       }
     }
   }

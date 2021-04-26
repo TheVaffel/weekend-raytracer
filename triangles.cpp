@@ -288,13 +288,13 @@ bool TriangleHitable::hit_triangle(const Ray& r, float tmin, float tmax, hit_rec
   Vec3 p = cross(dvec, e2);
   Vec3 q = cross(tvec, e1);
 
-  float det = p * e1;
+  float det = falg::dot(p, e1);
   if(std::abs(det) <= 1e-7) {
     // Ray and triangle nearly parallel
     return false;
   }
-  
-  Vec3 tuv = (1.0 / det) * Vec3(q * e2, p * tvec, q * dvec);
+
+  Vec3 tuv = (1.0 / det) * Vec3(falg::dot(q, e2), falg::dot(p, tvec), falg::dot(q, dvec));
 
   float t = tuv[0];
   float u = tuv[1];

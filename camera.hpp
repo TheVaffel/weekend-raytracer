@@ -9,7 +9,7 @@ vec3 random_in_unit_disk(unidist& dist) {
     float f1 = dist.get();
     float f2 = dist.get();
     p = 2.0 * vec3(f1, f2, 0) - vec3(1, 1, 0);
-  } while (p * p >= 1.0);
+  } while (falg::dot(p, p) >= 1.0);
   return p;
 }
 

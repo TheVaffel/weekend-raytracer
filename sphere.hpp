@@ -23,9 +23,9 @@ bool Sphere::bounding_box(float t0, float t1, Aabb& box) const {
 
 bool Sphere::hit(const Ray& r, float tmin, float tmax, hit_record& rec) const {
   vec3 oc = r.origin() - center;
-  float a = r.direction() * r.direction();
-  float b = oc * r.direction();
-  float c = oc * oc - radius * radius;
+  float a = falg::dot(r.direction(), r.direction());
+  float b = falg::dot(oc, r.direction());
+  float c = falg::dot(oc, oc) - radius * radius;
   float discriminant = b * b - a * c;
   if (discriminant > 0) {
     float temp = (-b -sqrt(b * b - a * c)) / a;
@@ -74,9 +74,9 @@ vec3 MovingSphere::center(float time) const {
 bool MovingSphere::hit(const Ray& r, float tmin, float tmax, hit_record& rec) const {
   vec3 curcen = this->center(r.time());
   vec3 oc = r.origin() - curcen;
-  float a = r.direction() * r.direction();
-  float b = oc * r.direction();
-  float c = oc * oc - radius * radius;
+  float a = falg::dot(r.direction(), r.direction());
+  float b = falg::dot(oc, r.direction());
+  float c = falg::dot(oc, oc) - radius * radius;
   float discriminant = b * b - a * c;
   if (discriminant > 0) {
     float temp = (-b -sqrt(b * b - a * c)) / a;
